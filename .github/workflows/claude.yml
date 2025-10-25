@@ -31,4 +31,9 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Using Claude MAX OAuth (single-user personal repo)
+          # This uses your $200/month MAX subscription instead of separate API billing
+          # Official Anthropic guidance: "Claude Max subscriptions are intended for
+          # a single user, and that applies here as well" (July 2025)
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
