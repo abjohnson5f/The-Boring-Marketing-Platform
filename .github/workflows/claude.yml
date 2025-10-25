@@ -37,6 +37,12 @@ jobs:
           # a single user, and that applies here as well" (July 2025)
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Allow Claude Code to execute database migrations and git operations
+          # psql: Database migrations (run-migrations.sh needs this)
+          # git: Version control operations
+          # chmod: Make scripts executable
+          allowedTools: "Read,Write,Edit,Glob,Grep,Bash(git *),Bash(psql *),Bash(chmod *)"
         env:
           # Database
           NEON_CONNECTION_STRING: ${{ secrets.NEON_CONNECTION_STRING }}
