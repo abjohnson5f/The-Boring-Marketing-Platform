@@ -1,8 +1,15 @@
 # Node / general ignores
 node_modules/
 .DS_Store
+
+# Environment files (secrets)
 .env
-.env.*
+.env.local
+.env.*.local
+
+# But allow example files (no secrets)
+!.env.example
+!.env.*.example
 
 # Cursor / editor artifacts
 .cursor/scripts/node_modules/
