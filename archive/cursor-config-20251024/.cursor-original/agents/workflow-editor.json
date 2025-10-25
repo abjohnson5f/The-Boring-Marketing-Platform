@@ -1,0 +1,27 @@
+{
+  "name": "Workflow Editor",
+  "description": "Modify an existing n8n workflow JSON to match the technical implementation plan.",
+  "prompt": "You are an expert n8n workflow engineer. Your goal: update the provided workflow JSON to implement the requested changes while preserving unrelated nodes, credentials, and metadata. Carefully follow the requirements below and confirm all connections and field mappings align with the implementation plan. Steps:\n1. Read referenced documentation/plan sections before editing.\n2. Apply required node additions/updates while keeping reference files read-only if instructed.\n3. Validate JSON structure (commas, arrays, braces) before returning.\n4. Summarize changes, list tests to run, and note any issues or follow-ups.\nDo not invent data (IDs, URLs) if not provided—leave TODO comments where needed.",
+  "required_files": [
+    "docs/prd/Boring-Businesses-Technical-Implementation-Plan.md",
+    "docs/Reference files/Hybrid Adaptive RAG Agent Template.json",
+    "docs/Reference files/Boring Business - Postgres Ingestion.json",
+    "docs/Reference files/LOCAL MARKET RESEARCH - PRODUCTION.json"
+  ],
+  "forbidden_paths": [
+    "docs/Reference files/"
+  ],
+  "environment": {
+    "rules": [
+      "Use existing credentials references (e.g., Postgres, HTTP) without altering IDs.",
+      "Maintain workflow ID and name unless instructed.",
+      "Write edited workflow to `workflows/` directory mirroring original filename.",
+      "Add inline comments using n8n's description fields if clarifications needed."
+    ]
+  },
+  "output_expectations": {
+    "summary": true,
+    "tests": true,
+    "issues": true
+  }
+}

@@ -1,0 +1,14 @@
+# Node / general ignores
+node_modules/
+.DS_Store
+.env
+.env.*
+
+# Cursor / editor artifacts
+.cursor/scripts/node_modules/
+.cursor/.cache/
+
+# Generated docs/testing logs
+/docs/testing/*.log
+/docs/testing/*.tmp
+

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://www.cursor.com/schemas/environment.schema.json",
+  "install": "echo 'No additional install step required for Boring Businesses repo'",
+  "start": "",
+  "terminals": []
+}
+

@@ -1,0 +1,1624 @@
+{
+  "name": "Boring Business - Postgres Ingestion",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "daysInterval": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -3456,
+        480
+      ],
+      "id": "35c309fc-e844-44dc-ab19-40d21003ec2a",
+      "name": "Schedule Trigger (Weekly)",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/datasets/ZZgMMauHlpYOqDmPR/items?token={{APIFY_API_TOKEN}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3248,
+        480
+      ],
+      "id": "9a77449e-a209-46ce-9dec-c051a1ac29bf",
+      "name": "Apify API - Fetch Google Maps Data"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "businesses",
+          "mode": "list",
+          "cachedResultName": "businesses"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $('Apify API - Fetch Google Maps Data').item.json.title }}",
+            "category": "={{ $('Apify API - Fetch Google Maps Data').item.json.categoryName }}",
+            "rating": "={{ $('Apify API - Fetch Google Maps Data').item.json.totalScore }}",
+            "reviews_count": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviewsCount }}",
+            "phone": "={{ $('Apify API - Fetch Google Maps Data').item.json.phone }}",
+            "website": "={{ $('Apify API - Fetch Google Maps Data').item.json.website }}",
+            "street": "={{ $('Apify API - Fetch Google Maps Data').item.json.street }}",
+            "city": "={{ $json.city || \"Unknown\" }}",
+            "state": "={{ $json.state || \"Unknown\" }}",
+            "country": "={{ $('Apify API - Fetch Google Maps Data').item.json.countryCode }}",
+            "url": "={{ $('Apify API - Fetch Google Maps Data').item.json.website }}",
+            "search_string": "={{ $('Apify API - Fetch Google Maps Data').item.json.searchString }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "business_id",
+              "displayName": "business_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rating",
+              "displayName": "rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviews_count",
+              "displayName": "reviews_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "street",
+              "displayName": "street",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "search_string",
+              "displayName": "search_string",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "apify_data",
+              "displayName": "apify_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2912,
+        480
+      ],
+      "id": "47f1d4f0-03a9-4cab-9f15-589ac6367970",
+      "name": "INSERT - Businesses",
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": "business_contacts",
+        "columns": {
+          "0": "b",
+          "1": "u",
+          "2": "s",
+          "3": "i",
+          "4": "n",
+          "5": "e",
+          "6": "s",
+          "7": "s",
+          "8": "_",
+          "9": "i",
+          "10": "d",
+          "11": ",",
+          "12": "a",
+          "13": "d",
+          "14": "d",
+          "15": "r",
+          "16": "e",
+          "17": "s",
+          "18": "s",
+          "19": ",",
+          "20": "n",
+          "21": "e",
+          "22": "i",
+          "23": "g",
+          "24": "h",
+          "25": "b",
+          "26": "o",
+          "27": "r",
+          "28": "h",
+          "29": "o",
+          "30": "o",
+          "31": "d",
+          "32": ",",
+          "33": "s",
+          "34": "t",
+          "35": "r",
+          "36": "e",
+          "37": "e",
+          "38": "t",
+          "39": ",",
+          "40": "c",
+          "41": "i",
+          "42": "t",
+          "43": "y",
+          "44": ",",
+          "45": "p",
+          "46": "o",
+          "47": "s",
+          "48": "t",
+          "49": "a",
+          "50": "l",
+          "51": "_",
+          "52": "c",
+          "53": "o",
+          "54": "d",
+          "55": "e",
+          "56": ",",
+          "57": "s",
+          "58": "t",
+          "59": "a",
+          "60": "t",
+          "61": "e",
+          "62": ",",
+          "63": "c",
+          "64": "o",
+          "65": "u",
+          "66": "n",
+          "67": "t",
+          "68": "r",
+          "69": "y",
+          "70": ",",
+          "71": "p",
+          "72": "h",
+          "73": "o",
+          "74": "n",
+          "75": "e",
+          "76": "_",
+          "77": "u",
+          "78": "n",
+          "79": "f",
+          "80": "o",
+          "81": "r",
+          "82": "m",
+          "83": "a",
+          "84": "t",
+          "85": "t",
+          "86": "e",
+          "87": "d",
+          "88": ",",
+          "89": "e",
+          "90": "m",
+          "91": "a",
+          "92": "i",
+          "93": "l",
+          "94": "s",
+          "95": ",",
+          "96": "l",
+          "97": "a",
+          "98": "t",
+          "99": ",",
+          "100": "l",
+          "101": "n",
+          "102": "g",
+          "103": ",",
+          "104": "p",
+          "105": "l",
+          "106": "u",
+          "107": "s",
+          "108": "_",
+          "109": "c",
+          "110": "o",
+          "111": "d",
+          "112": "e",
+          "mappingMode": "defineBelow",
+          "value": {
+            "business_id": "={{ $json.business_id }}",
+            "lat": "={{ $('Apify API - Fetch Google Maps Data').item.json.location.lat }}",
+            "lng": "={{ $('Apify API - Fetch Google Maps Data').item.json.location.lng }}",
+            "address": "={{ $('Apify API - Fetch Google Maps Data').item.json.address }}",
+            "neighborhood": "={{ $('Apify API - Fetch Google Maps Data').item.json.neighborhood }}",
+            "postal_code": "={{ $('Apify API - Fetch Google Maps Data').item.json.postalCode }}",
+            "phone_unformatted": "={{ $('Apify API - Fetch Google Maps Data').item.json.phoneUnformatted }}",
+            "emails": "={{ $('Apify API - Fetch Google Maps Data').item.json.emails }}",
+            "plus_code": "={{ $('Apify API - Fetch Google Maps Data').item.json.plusCode }}",
+            "city": "={{ $('Apify API - Fetch Google Maps Data').item.json.city }}",
+            "state": "={{ $json.state }}",
+            "country": "={{ $('Apify API - Fetch Google Maps Data').item.json.countryCode }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "contact_id",
+              "displayName": "contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "business_id",
+              "displayName": "business_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "address",
+              "displayName": "address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "neighborhood",
+              "displayName": "neighborhood",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "postal_code",
+              "displayName": "postal_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone_unformatted",
+              "displayName": "phone_unformatted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "emails",
+              "displayName": "emails",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "lat",
+              "displayName": "lat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "lng",
+              "displayName": "lng",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "plus_code",
+              "displayName": "plus_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "street",
+              "displayName": "street",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1776,
+        -304
+      ],
+      "id": "a85591b7-a9cb-4804-b75a-765f3fd6fd00",
+      "name": "INSERT - Contacts",
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": "business_social",
+        "columns": {
+          "0": "b",
+          "1": "u",
+          "2": "s",
+          "3": "i",
+          "4": "n",
+          "5": "e",
+          "6": "s",
+          "7": "s",
+          "8": "_",
+          "9": "i",
+          "10": "d",
+          "11": ",",
+          "12": "i",
+          "13": "n",
+          "14": "s",
+          "15": "t",
+          "16": "a",
+          "17": "g",
+          "18": "r",
+          "19": "a",
+          "20": "m",
+          "21": "s",
+          "22": ",",
+          "23": "f",
+          "24": "a",
+          "25": "c",
+          "26": "e",
+          "27": "b",
+          "28": "o",
+          "29": "o",
+          "30": "k",
+          "31": "s",
+          "32": ",",
+          "33": "l",
+          "34": "i",
+          "35": "n",
+          "36": "k",
+          "37": "e",
+          "38": "d",
+          "39": "i",
+          "40": "n",
+          "41": "s",
+          "42": ",",
+          "43": "y",
+          "44": "o",
+          "45": "u",
+          "46": "t",
+          "47": "u",
+          "48": "b",
+          "49": "e",
+          "50": "s",
+          "51": ",",
+          "52": "t",
+          "53": "i",
+          "54": "k",
+          "55": "t",
+          "56": "o",
+          "57": "k",
+          "58": "s",
+          "59": ",",
+          "60": "t",
+          "61": "w",
+          "62": "i",
+          "63": "t",
+          "64": "t",
+          "65": "e",
+          "66": "r",
+          "67": "s",
+          "68": ",",
+          "69": "p",
+          "70": "i",
+          "71": "n",
+          "72": "t",
+          "73": "e",
+          "74": "r",
+          "75": "e",
+          "76": "s",
+          "77": "t",
+          "78": "s",
+          "mappingMode": "defineBelow",
+          "value": {
+            "business_id": "={{ $json.business_id }}",
+            "instagrams": "={{ $('Apify API - Fetch Google Maps Data').item.json.instagrams }}",
+            "facebooks": "={{ $('Apify API - Fetch Google Maps Data').item.json.facebooks }}",
+            "linkedins": "={{ $('Apify API - Fetch Google Maps Data').item.json.linkedIns }}",
+            "tiktoks": "={{ $('Apify API - Fetch Google Maps Data').item.json.tiktoks }}",
+            "youtubes": "={{ $('Apify API - Fetch Google Maps Data').item.json.youtubes }}",
+            "twitters": "={{ $('Apify API - Fetch Google Maps Data').item.json.twitters }}",
+            "pinterests": "={{ $('Apify API - Fetch Google Maps Data').item.json.pinterests }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "social_id",
+              "displayName": "social_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "business_id",
+              "displayName": "business_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "instagrams",
+              "displayName": "instagrams",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "facebooks",
+              "displayName": "facebooks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "linkedins",
+              "displayName": "linkedins",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "youtubes",
+              "displayName": "youtubes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tiktoks",
+              "displayName": "tiktoks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "twitters",
+              "displayName": "twitters",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pinterests",
+              "displayName": "pinterests",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1776,
+        -144
+      ],
+      "id": "b899f72d-9957-4290-a3b2-aa388023102b",
+      "name": "INSERT - Social",
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": "business_ratings",
+        "columns": {
+          "0": "b",
+          "1": "u",
+          "2": "s",
+          "3": "i",
+          "4": "n",
+          "5": "e",
+          "6": "s",
+          "7": "s",
+          "8": "_",
+          "9": "i",
+          "10": "d",
+          "11": ",",
+          "12": "t",
+          "13": "o",
+          "14": "t",
+          "15": "a",
+          "16": "l",
+          "17": "_",
+          "18": "s",
+          "19": "c",
+          "20": "o",
+          "21": "r",
+          "22": "e",
+          "23": ",",
+          "24": "r",
+          "25": "e",
+          "26": "v",
+          "27": "i",
+          "28": "e",
+          "29": "w",
+          "30": "s",
+          "31": "_",
+          "32": "c",
+          "33": "o",
+          "34": "u",
+          "35": "n",
+          "36": "t",
+          "37": ",",
+          "38": "o",
+          "39": "n",
+          "40": "e",
+          "41": "_",
+          "42": "s",
+          "43": "t",
+          "44": "a",
+          "45": "r",
+          "46": ",",
+          "47": "t",
+          "48": "w",
+          "49": "o",
+          "50": "_",
+          "51": "s",
+          "52": "t",
+          "53": "a",
+          "54": "r",
+          "55": ",",
+          "56": "t",
+          "57": "h",
+          "58": "r",
+          "59": "e",
+          "60": "e",
+          "61": "_",
+          "62": "s",
+          "63": "t",
+          "64": "a",
+          "65": "r",
+          "66": ",",
+          "67": "f",
+          "68": "o",
+          "69": "u",
+          "70": "r",
+          "71": "_",
+          "72": "s",
+          "73": "t",
+          "74": "a",
+          "75": "r",
+          "76": ",",
+          "77": "f",
+          "78": "i",
+          "79": "v",
+          "80": "e",
+          "81": "_",
+          "82": "s",
+          "83": "t",
+          "84": "a",
+          "85": "r",
+          "86": ",",
+          "87": "r",
+          "88": "e",
+          "89": "v",
+          "90": "i",
+          "91": "e",
+          "92": "w",
+          "93": "_",
+          "94": "t",
+          "95": "a",
+          "96": "g",
+          "97": "s",
+          "mappingMode": "defineBelow",
+          "value": {
+            "total_score": "={{ $('Apify API - Fetch Google Maps Data').item.json.totalScore }}",
+            "reviews_count": "={{ $json.reviews_count }}",
+            "one_star": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviewsDistribution.oneStar }}",
+            "two_star": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviewsDistribution.twoStar }}",
+            "three_star": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviewsDistribution.threeStar }}",
+            "four_star": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviewsDistribution.fourStar }}",
+            "five_star": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviewsDistribution.fiveStar }}",
+            "business_id": "={{ $json.business_id }}",
+            "review_tags": "={{ ($('Apify API - Fetch Google Maps Data').item.json.reviewsTags || []).reduce((obj, tag) => ({...obj, [tag.title]: tag.count}), {}) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "rating_id",
+              "displayName": "rating_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "business_id",
+              "displayName": "business_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "total_score",
+              "displayName": "total_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviews_count",
+              "displayName": "reviews_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "one_star",
+              "displayName": "one_star",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "two_star",
+              "displayName": "two_star",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "three_star",
+              "displayName": "three_star",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "four_star",
+              "displayName": "four_star",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "five_star",
+              "displayName": "five_star",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "review_tags",
+              "displayName": "review_tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1776,
+        48
+      ],
+      "id": "c1938348-3c5b-4421-9600-6f67b265c114",
+      "name": "INSERT - Ratings",
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": "business_reviews",
+        "columns": {
+          "0": "b",
+          "1": "u",
+          "2": "s",
+          "3": "i",
+          "4": "n",
+          "5": "e",
+          "6": "s",
+          "7": "s",
+          "8": "_",
+          "9": "i",
+          "10": "d",
+          "11": ",",
+          "12": "r",
+          "13": "e",
+          "14": "v",
+          "15": "i",
+          "16": "e",
+          "17": "w",
+          "18": "e",
+          "19": "r",
+          "20": "_",
+          "21": "i",
+          "22": "d",
+          "23": ",",
+          "24": "r",
+          "25": "e",
+          "26": "v",
+          "27": "i",
+          "28": "e",
+          "29": "w",
+          "30": "e",
+          "31": "r",
+          "32": "_",
+          "33": "n",
+          "34": "a",
+          "35": "m",
+          "36": "e",
+          "37": ",",
+          "38": "r",
+          "39": "e",
+          "40": "v",
+          "41": "i",
+          "42": "e",
+          "43": "w",
+          "44": "e",
+          "45": "r",
+          "46": "_",
+          "47": "u",
+          "48": "r",
+          "49": "l",
+          "50": ",",
+          "51": "r",
+          "52": "e",
+          "53": "v",
+          "54": "i",
+          "55": "e",
+          "56": "w",
+          "57": "e",
+          "58": "r",
+          "59": "_",
+          "60": "r",
+          "61": "e",
+          "62": "v",
+          "63": "i",
+          "64": "e",
+          "65": "w",
+          "66": "s",
+          "67": "_",
+          "68": "c",
+          "69": "o",
+          "70": "u",
+          "71": "n",
+          "72": "t",
+          "73": ",",
+          "74": "i",
+          "75": "s",
+          "76": "_",
+          "77": "l",
+          "78": "o",
+          "79": "c",
+          "80": "a",
+          "81": "l",
+          "82": "_",
+          "83": "g",
+          "84": "u",
+          "85": "i",
+          "86": "d",
+          "87": "e",
+          "88": ",",
+          "89": "r",
+          "90": "e",
+          "91": "v",
+          "92": "i",
+          "93": "e",
+          "94": "w",
+          "95": "e",
+          "96": "r",
+          "97": "_",
+          "98": "p",
+          "99": "h",
+          "100": "o",
+          "101": "t",
+          "102": "o",
+          "103": "_",
+          "104": "u",
+          "105": "r",
+          "106": "l",
+          "107": ",",
+          "108": "s",
+          "109": "t",
+          "110": "a",
+          "111": "r",
+          "112": "s",
+          "113": ",",
+          "114": "r",
+          "115": "e",
+          "116": "v",
+          "117": "i",
+          "118": "e",
+          "119": "w",
+          "120": "_",
+          "121": "t",
+          "122": "e",
+          "123": "x",
+          "124": "t",
+          "125": ",",
+          "126": "t",
+          "127": "e",
+          "128": "x",
+          "129": "t",
+          "130": "_",
+          "131": "t",
+          "132": "r",
+          "133": "a",
+          "134": "n",
+          "135": "s",
+          "136": "l",
+          "137": "a",
+          "138": "t",
+          "139": "e",
+          "140": "d",
+          "141": ",",
+          "142": "p",
+          "143": "u",
+          "144": "b",
+          "145": "l",
+          "146": "i",
+          "147": "s",
+          "148": "h",
+          "149": "_",
+          "150": "a",
+          "151": "t",
+          "152": ",",
+          "153": "l",
+          "154": "i",
+          "155": "k",
+          "156": "e",
+          "157": "s",
+          "158": "_",
+          "159": "c",
+          "160": "o",
+          "161": "u",
+          "162": "n",
+          "163": "t",
+          "164": ",",
+          "165": "r",
+          "166": "e",
+          "167": "s",
+          "168": "p",
+          "169": "o",
+          "170": "n",
+          "171": "s",
+          "172": "e",
+          "173": "_",
+          "174": "f",
+          "175": "r",
+          "176": "o",
+          "177": "m",
+          "178": "_",
+          "179": "o",
+          "180": "w",
+          "181": "n",
+          "182": "e",
+          "183": "r",
+          "184": "_",
+          "185": "d",
+          "186": "a",
+          "187": "t",
+          "188": "e",
+          "189": ",",
+          "190": "r",
+          "191": "e",
+          "192": "s",
+          "193": "p",
+          "194": "o",
+          "195": "n",
+          "196": "s",
+          "197": "e",
+          "198": "_",
+          "199": "f",
+          "200": "r",
+          "201": "o",
+          "202": "m",
+          "203": "_",
+          "204": "o",
+          "205": "w",
+          "206": "n",
+          "207": "e",
+          "208": "r",
+          "209": "_",
+          "210": "t",
+          "211": "e",
+          "212": "x",
+          "213": "t",
+          "214": ",",
+          "215": "p",
+          "216": "e",
+          "217": "o",
+          "218": "p",
+          "219": "l",
+          "220": "e",
+          "221": "_",
+          "222": "a",
+          "223": "l",
+          "224": "s",
+          "225": "o",
+          "226": "_",
+          "227": "s",
+          "228": "e",
+          "229": "a",
+          "230": "r",
+          "231": "c",
+          "232": "h",
+          "mappingMode": "defineBelow",
+          "value": {
+            "review_id": 0,
+            "business_id": "={{ $json.business_id }}",
+            "reviewer_reviews_count": 0,
+            "stars": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(review => review.stars) }}",
+            "likes_count": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(reviews => reviews.likescount) }}",
+            "reviewer_id": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(review => review.reviewerId) }}",
+            "reviewer_name": "={{ $json.reviewerName || \"Unknown\" }}",
+            "reviewer_url": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(review => review.reviewerUrl) }}",
+            "reviewer_photo_url": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(review => review.reviewerPhotoUrl) }}",
+            "review_text": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(review => review.text) }}",
+            "text_translated": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(review => review.texttranslated) }}",
+            "publish_at": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(reviews => reviews.publishat) }}",
+            "response_from_owner_date": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(reviews => reviews.responsefromownerdate) }}",
+            "response_from_owner_text": "={{ $('Apify API - Fetch Google Maps Data').item.json.reviews.map(reviews => reviews.responsefromownertext) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "review_id",
+              "displayName": "review_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "business_id",
+              "displayName": "business_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviewer_id",
+              "displayName": "reviewer_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviewer_name",
+              "displayName": "reviewer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviewer_url",
+              "displayName": "reviewer_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviewer_reviews_count",
+              "displayName": "reviewer_reviews_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "is_local_guide",
+              "displayName": "is_local_guide",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviewer_photo_url",
+              "displayName": "reviewer_photo_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "stars",
+              "displayName": "stars",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "review_text",
+              "displayName": "review_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "text_translated",
+              "displayName": "text_translated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "publish_at",
+              "displayName": "publish_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "likes_count",
+              "displayName": "likes_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "response_from_owner_date",
+              "displayName": "response_from_owner_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "response_from_owner_text",
+              "displayName": "response_from_owner_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "people_also_search",
+              "displayName": "people_also_search",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1776,
+        240
+      ],
+      "id": "59aef0f9-116f-497a-b9db-856bce15d9ae",
+      "name": "INSERT - Reviews",
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": "business_leads",
+        "columns": "business_id,leads_enrichment",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1776,
+        432
+      ],
+      "id": "a99c9f7d-adde-4b61-9e8b-dfc1fa1108fc",
+      "name": "INSERT - Leads"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": "business_popular_times",
+        "columns": "business_id,search_string,live_text,live_percent,histogram,domain",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1776,
+        624
+      ],
+      "id": "e2ec0993-d8aa-4317-ad36-a22ec625a541",
+      "name": "INSERT - Popular Times"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Apify API - Fetch Google Maps Data": {
+      "main": [
+        [
+          {
+            "node": "INSERT - Businesses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT - Businesses": {
+      "main": [
+        [
+          {
+            "node": "INSERT - Contacts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "INSERT - Social",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "INSERT - Ratings",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "INSERT - Reviews",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "INSERT - Leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "INSERT - Popular Times",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT - Contacts": {
+      "main": [
+        []
+      ]
+    },
+    "INSERT - Social": {
+      "main": [
+        []
+      ]
+    },
+    "INSERT - Ratings": {
+      "main": [
+        []
+      ]
+    },
+    "INSERT - Reviews": {
+      "main": [
+        []
+      ]
+    },
+    "INSERT - Leads": {
+      "main": [
+        []
+      ]
+    },
+    "INSERT - Popular Times": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger (Weekly)": {
+      "main": [
+        [
+          {
+            "node": "Apify API - Fetch Google Maps Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d5def4fb-3752-4f95-829e-d13ffb609fdb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d716af02fe63578141d16dd6768a7dfefc0a9cd5ffbf048e671f0da56713bce5"
+  },
+  "id": "XZjNw98KkbeHGlRm",
+  "tags": []
+}

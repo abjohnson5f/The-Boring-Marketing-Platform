@@ -1,0 +1,12 @@
+{
+  "beforeCommand": {
+    "script": "node .cursor/scripts/beforeCommand.js"
+  },
+  "afterFileEdit": {
+    "script": "node .cursor/scripts/afterFileEdit.js"
+  },
+  "onAgentFinish": {
+    "script": "node .cursor/scripts/onAgentFinish.js"
+  }
+}
+
