@@ -56,18 +56,22 @@ jobs:
           expires_at: ${{ env.EXPIRES_AT }}
 
       - name: Run Database Migrations
+        env:
+          DATABASE_URL: ${{ steps.create_neon_branch.outputs.db_url_with_pooler }}
         run: |
           echo "Running Day 1 database migrations on preview branch..."
-          psql "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" -f sql/001_create_orchestrator_log.sql
-          psql "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" -f sql/002_opportunity_tables.sql
-          psql "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" -f sql/003_threshold_seed.sql
-          psql "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" -f sql/004_runtime_logging.sql
+          psql "${DATABASE_URL}" -f sql/001_create_orchestrator_log.sql
+          psql "${DATABASE_URL}" -f sql/002_opportunity_tables.sql
+          psql "${DATABASE_URL}" -f sql/003_threshold_seed.sql
+          psql "${DATABASE_URL}" -f sql/004_runtime_logging.sql
           echo "✅ Migrations completed successfully"
 
       - name: Run Validation Tests
+        env:
+          DATABASE_URL: ${{ steps.create_neon_branch.outputs.db_url_with_pooler }}
         run: |
           echo "Running validation tests..."
-          psql "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" -f sql/tests/001_constraint_validation.sql
+          psql "${DATABASE_URL}" -f sql/tests/001_constraint_validation.sql
           echo "✅ Validation tests completed"
 
       - name: Post Schema Diff Comment to PR
