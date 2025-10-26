@@ -30,7 +30,7 @@ jobs:
     name: Create Neon Branch
     outputs:
       db_url: ${{ steps.create_neon_branch.outputs.db_url }}
-      db_url_with_pooler: ${{ steps.create_neon_branch.outputs.db_url_with_pooler }}
+      db_url_pooled: ${{ steps.create_neon_branch.outputs.db_url_pooled }}
     needs: setup
     if: |
       github.event_name == 'pull_request' && (
@@ -55,9 +55,16 @@ jobs:
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
+      - name: Verify Connection String
+        run: |
+          echo "✓ Neon branch created successfully"
+          echo "✓ Branch ID: ${{ steps.create_neon_branch.outputs.branch_id }}"
+          echo "✓ Connection string populated: $(if [ -n "${{ steps.create_neon_branch.outputs.db_url }}" ]; then echo "YES"; else echo "NO"; fi)"
+          echo "✓ Using direct connection (recommended for migrations)"
+
       - name: Run Database Migrations
         env:
-          DATABASE_URL: ${{ steps.create_neon_branch.outputs.db_url_with_pooler }}
+          DATABASE_URL: ${{ steps.create_neon_branch.outputs.db_url }}
         run: |
           echo "Running Day 1 database migrations on preview branch..."
           psql "${DATABASE_URL}" -f sql/001_create_orchestrator_log.sql
@@ -68,7 +75,7 @@ jobs:
 
       - name: Run Validation Tests
         env:
-          DATABASE_URL: ${{ steps.create_neon_branch.outputs.db_url_with_pooler }}
+          DATABASE_URL: ${{ steps.create_neon_branch.outputs.db_url }}
         run: |
           echo "Running validation tests..."
           psql "${DATABASE_URL}" -f sql/tests/001_constraint_validation.sql
