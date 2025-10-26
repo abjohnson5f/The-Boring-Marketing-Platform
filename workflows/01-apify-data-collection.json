@@ -77,7 +77,7 @@
     },
     {
       "parameters": {
-        "url": "https://api.apify.com/v2/datasets/ZZgMMauHlpYOqDmPR/items?status=SUCCEEDED",
+        "url": "https://api.apify.com/v2/datasets/salGt47qQexAPmsJv/items?status=SUCCEEDED",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpQueryAuth",
         "options": {}
@@ -616,7 +616,7 @@
             "run_id": "={{ $('Set Hypothesis Context').item.json.run_id }}",
             "stage": "workflow_complete",
             "severity": "info",
-            "message": "={{ 'Successfully processed ' + $('UPSERT - Businesses').item.json.length + ' businesses and ' + $('INSERT - Reviews').item.json.length + ' reviews' }}"
+            "message": "={{ 'Successfully processed ' + $('UPSERT - Businesses').json.rowCount + ' businesses and ' + $('INSERT - Reviews').json.rowCount + ' reviews' }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -747,7 +747,7 @@
             },
             {
               "name": "records_ingested",
-              "value": "={{ $('UPSERT - Businesses').item.json.length || 0 }}"
+              "value": "={{ $('UPSERT - Businesses').json.rowCount || 0 }}"
             },
             {
               "name": "warnings",

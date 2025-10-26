@@ -189,7 +189,7 @@
         "select": "channel",
         "channelId": {
           "__rl": true,
-          "value": "C12345ABC",
+          "value": "C07OPS12345",
           "mode": "id"
         },
         "text": "=🚨 **Apify Data Collection Error**\n\n**Node:** {{ $json.error_node }}\n**Message:** {{ $json.error_message }}\n**Code:** {{ $json.error_code }}\n**Run ID:** {{ $json.run_id }}\n**Time:** {{ $now.toISO() }}\n\n@alex Please investigate immediately.",
