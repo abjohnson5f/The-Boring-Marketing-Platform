@@ -601,7 +601,3 @@ This software and associated documentation are confidential and proprietary. Una
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
-
-## Testing Neon Branch-per-PR Workflow
-
-This PR tests the automatic Neon database branching workflow.
