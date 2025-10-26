@@ -1,0 +1,885 @@
+{
+  "name": "01 - Apify Data Collection",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3680,
+        480
+      ],
+      "id": "manual-trigger-node",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "content": "## Step 0: Set Hypothesis Context\n\nThis node captures the hypothesis_id, run_id, and apify_run_id for tracking purposes.\n\n**Fields:**\n- `hypothesis_id`: UUID from orchestrator (tracks which market hypothesis this data belongs to)\n- `run_id`: Generated UUID for this specific ingestion run\n- `apify_run_id`: Populated from Apify API response (tracks the Apify dataset execution)\n- `city`, `state`, `search_string`: Context for data filtering",
+        "height": 400,
+        "width": 500,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3680,
+        200
+      ],
+      "id": "sticky-note-step-0",
+      "name": "Sticky Note - Step 0"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "hypothesis_id",
+              "name": "hypothesis_id",
+              "value": "={{ $json.hypothesis_id || 'manual-run' }}",
+              "type": "string"
+            },
+            {
+              "id": "run_id",
+              "name": "run_id",
+              "value": "={{ $now.toISO() + '-' + Math.random().toString(36).substring(7) }}",
+              "type": "string"
+            },
+            {
+              "id": "city",
+              "name": "city",
+              "value": "={{ $json.city || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "state",
+              "name": "state",
+              "value": "={{ $json.state || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "search_string",
+              "name": "search_string",
+              "value": "={{ $json.search_string || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -3456,
+        480
+      ],
+      "id": "set-hypothesis-context",
+      "name": "Set Hypothesis Context"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/datasets/ZZgMMauHlpYOqDmPR/items?status=SUCCEEDED",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3248,
+        480
+      ],
+      "id": "apify-api-fetch",
+      "name": "Apify API - Fetch Google Maps Data",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "apify-token-credential",
+          "name": "Apify API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Step 2: Flatten Reviews\n\nThis Code node fixes the critical bug in the original workflow where review arrays were being inserted as strings.\n\n**What it does:**\n- Loops through each business's reviews array\n- Creates ONE output item per review\n- Uses correct camelCase field names (likesCount, textTranslated, publishAt)\n- Handles null values gracefully\n\n**Before:** `\"[3,5,4,2,5]\"` stored as string\n**After:** 5 separate rows in business_reviews table",
+        "height": 350,
+        "width": 500,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2800,
+        200
+      ],
+      "id": "sticky-note-step-2",
+      "name": "Sticky Note - Step 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Flatten reviews from all businesses\n// Input: Array of business objects with reviews arrays\n// Output: One item per review with business_id preserved\n\nconst results = [];\n\nfor (const business of items) {\n  const b = business.json;\n  \n  // Ensure business_id exists\n  const businessId = b.business_id || b.id;\n  \n  // Ensure reviews exist and is an array\n  if (Array.isArray(b.reviews) && b.reviews.length > 0) {\n    for (const review of b.reviews) {\n      results.push({\n        json: {\n          business_id: businessId,\n          reviewer_id: review.reviewerId || null,\n          reviewer_name: review.name || null,\n          reviewer_url: review.reviewerUrl || null,\n          reviewer_reviews_count: review.reviewerNumberOfReviews || null,\n          is_local_guide: review.isLocalGuide || false,\n          reviewer_photo_url: review.reviewerPhotoUrl || null,\n          stars: review.stars || null,\n          review_text: review.text || null,\n          text_translated: review.textTranslated || null,\n          publish_at: review.publishAt || review.publishedAtDate || null,\n          likes_count: review.likesCount || 0,\n          response_from_owner_date: review.responseFromOwnerDate || null,\n          response_from_owner_text: review.responseFromOwnerText || null,\n          people_also_search: Array.isArray(review.peopleAlsoSearch) \n            ? JSON.stringify(review.peopleAlsoSearch) \n            : null\n        }\n      });\n    }\n  }\n}\n\nreturn results.length > 0 ? results : [{ json: { no_reviews: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2704,
+        640
+      ],
+      "id": "function-flatten-reviews",
+      "name": "Function: Flatten Reviews"
+    },
+    {
+      "parameters": {
+        "content": "## Step 4: UPSERT Businesses\n\n**Decision: UPSERT vs INSERT**\n- Uses UPSERT to prevent duplicate businesses\n- Match columns: search_string, title, city, state\n- Re-running the same Apify dataset will UPDATE existing records instead of creating duplicates\n\n**JSONB storage:**\n- apify_data column stores full raw JSON for flexible querying",
+        "height": 300,
+        "width": 500,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2480,
+        200
+      ],
+      "id": "sticky-note-step-4",
+      "name": "Sticky Note - Step 4"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "businesses",
+          "mode": "list",
+          "cachedResultName": "businesses"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $('Set Hypothesis Context').item.json.run_id }}",
+            "title": "={{ $json.title }}",
+            "category": "={{ $json.categoryName }}",
+            "rating": "={{ $json.totalScore }}",
+            "reviews_count": "={{ $json.reviewsCount }}",
+            "phone": "={{ $json.phone }}",
+            "website": "={{ $json.website }}",
+            "street": "={{ $json.street }}",
+            "city": "={{ $json.city || $('Set Hypothesis Context').item.json.city }}",
+            "state": "={{ $json.state || $('Set Hypothesis Context').item.json.state }}",
+            "country": "={{ $json.countryCode }}",
+            "url": "={{ $json.url }}",
+            "search_string": "={{ $json.searchString || $('Set Hypothesis Context').item.json.search_string }}",
+            "apify_data": "={{ JSON.stringify($json) }}"
+          },
+          "matchingColumns": [
+            "search_string",
+            "title",
+            "city",
+            "state"
+          ],
+          "schema": [
+            {
+              "id": "business_id",
+              "displayName": "business_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rating",
+              "displayName": "rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviews_count",
+              "displayName": "reviews_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "street",
+              "displayName": "street",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "search_string",
+              "displayName": "search_string",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "apify_data",
+              "displayName": "apify_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2912,
+        480
+      ],
+      "id": "upsert-businesses",
+      "name": "UPSERT - Businesses",
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Step 5: INSERT Reviews\n\n**Decision: INSERT vs UPSERT for Reviews**\n- Uses INSERT (not UPSERT) for atomic batch operations\n- All reviews for a business succeed or fail together\n- Input comes from Function: Flatten Reviews node\n\n**Key fields:**\n- business_id: Foreign key to businesses table\n- All review fields use correct camelCase from Apify",
+        "height": 300,
+        "width": 500,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2160,
+        500
+      ],
+      "id": "sticky-note-step-5",
+      "name": "Sticky Note - Step 5"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "business_reviews",
+          "mode": "list",
+          "cachedResultName": "business_reviews"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "business_id": "={{ $json.business_id }}",
+            "reviewer_id": "={{ $json.reviewer_id }}",
+            "reviewer_name": "={{ $json.reviewer_name }}",
+            "reviewer_url": "={{ $json.reviewer_url }}",
+            "reviewer_reviews_count": "={{ $json.reviewer_reviews_count }}",
+            "is_local_guide": "={{ $json.is_local_guide }}",
+            "reviewer_photo_url": "={{ $json.reviewer_photo_url }}",
+            "stars": "={{ $json.stars }}",
+            "review_text": "={{ $json.review_text }}",
+            "text_translated": "={{ $json.text_translated }}",
+            "publish_at": "={{ $json.publish_at }}",
+            "likes_count": "={{ $json.likes_count }}",
+            "response_from_owner_date": "={{ $json.response_from_owner_date }}",
+            "response_from_owner_text": "={{ $json.response_from_owner_text }}",
+            "people_also_search": "={{ $json.people_also_search }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "review_id",
+              "displayName": "review_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "business_id",
+              "displayName": "business_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewer_id",
+              "displayName": "reviewer_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewer_name",
+              "displayName": "reviewer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewer_url",
+              "displayName": "reviewer_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewer_reviews_count",
+              "displayName": "reviewer_reviews_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_local_guide",
+              "displayName": "is_local_guide",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewer_photo_url",
+              "displayName": "reviewer_photo_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "stars",
+              "displayName": "stars",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "review_text",
+              "displayName": "review_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text_translated",
+              "displayName": "text_translated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "publish_at",
+              "displayName": "publish_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "likes_count",
+              "displayName": "likes_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "response_from_owner_date",
+              "displayName": "response_from_owner_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "response_from_owner_text",
+              "displayName": "response_from_owner_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "people_also_search",
+              "displayName": "people_also_search",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2480,
+        640
+      ],
+      "id": "insert-reviews",
+      "name": "INSERT - Reviews",
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Step 6: ETL Logging\n\n**Logs each execution stage:**\n- run_id: Links to hypothesis execution\n- stage: 'apify_fetch', 'business_upsert', 'review_insert', etc.\n- severity: 'info', 'warning', 'error'\n- message: Details about what happened\n\n**Used for:**\n- Debugging failed runs\n- Performance monitoring\n- Audit trail",
+        "height": 300,
+        "width": 500,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1840,
+        200
+      ],
+      "id": "sticky-note-step-6",
+      "name": "Sticky Note - Step 6"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "etl_logs",
+          "mode": "list",
+          "cachedResultName": "etl_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $('Set Hypothesis Context').item.json.run_id }}",
+            "stage": "workflow_complete",
+            "severity": "info",
+            "message": "={{ 'Successfully processed ' + $('UPSERT - Businesses').item.json.length + ' businesses and ' + $('INSERT - Reviews').item.json.length + ' reviews' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2256,
+        640
+      ],
+      "id": "insert-etl-log",
+      "name": "INSERT - ETL Log",
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Step 7: Webhook Summary\n\n**Sends run summary to orchestrator:**\n- run_id, hypothesis_id\n- records_ingested count\n- warnings array\n- duration_ms\n- started_at, completed_at timestamps\n\n**Only used when called by orchestrator**\n(Manual runs skip this step)",
+        "height": 300,
+        "width": 500,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1520,
+        200
+      ],
+      "id": "sticky-note-step-7",
+      "name": "Sticky Note - Step 7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.orchestrator_webhook_url || 'http://localhost:5678/webhook/orchestrator/run-summary' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "run_id",
+              "value": "={{ $('Set Hypothesis Context').item.json.run_id }}"
+            },
+            {
+              "name": "hypothesis_id",
+              "value": "={{ $('Set Hypothesis Context').item.json.hypothesis_id }}"
+            },
+            {
+              "name": "apify_run_id",
+              "value": "={{ $json.apify_run_id || 'manual' }}"
+            },
+            {
+              "name": "city",
+              "value": "={{ $('Set Hypothesis Context').item.json.city }}"
+            },
+            {
+              "name": "state",
+              "value": "={{ $('Set Hypothesis Context').item.json.state }}"
+            },
+            {
+              "name": "search_terms",
+              "value": "={{ [$('Set Hypothesis Context').item.json.search_string] }}"
+            },
+            {
+              "name": "records_ingested",
+              "value": "={{ $('UPSERT - Businesses').item.json.length || 0 }}"
+            },
+            {
+              "name": "warnings",
+              "value": "={{ [] }}"
+            },
+            {
+              "name": "duration_ms",
+              "value": "={{ Date.now() - new Date($('Set Hypothesis Context').item.json.run_id.split('-')[0]).getTime() }}"
+            },
+            {
+              "name": "started_at",
+              "value": "={{ $('Set Hypothesis Context').item.json.run_id.split('-')[0] }}"
+            },
+            {
+              "name": "completed_at",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2032,
+        640
+      ],
+      "id": "webhook-run-summary",
+      "name": "Webhook - Run Summary",
+      "continueOnFail": true,
+      "credentials": {
+        "n8nApi": {
+          "id": "n8n-api-credential",
+          "name": "n8n API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Hypothesis Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Hypothesis Context": {
+      "main": [
+        [
+          {
+            "node": "Apify API - Fetch Google Maps Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify API - Fetch Google Maps Data": {
+      "main": [
+        [
+          {
+            "node": "UPSERT - Businesses",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Function: Flatten Reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UPSERT - Businesses": {
+      "main": [
+        [
+          {
+            "node": "INSERT - ETL Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function: Flatten Reviews": {
+      "main": [
+        [
+          {
+            "node": "INSERT - Reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT - Reviews": {
+      "main": [
+        [
+          {
+            "node": "INSERT - ETL Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT - ETL Log": {
+      "main": [
+        [
+          {
+            "node": "Webhook - Run Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "day-2-implementation",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "placeholder-for-deployment"
+  },
+  "id": "01-apify-data-collection",
+  "tags": []
+}

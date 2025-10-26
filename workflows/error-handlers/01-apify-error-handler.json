@@ -1,0 +1,256 @@
+{
+  "name": "01 - Apify Error Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "events": ["workflow.error"],
+        "workflowId": "={{ $json.workflowId }}"
+      },
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        320
+      ],
+      "id": "error-trigger",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "content": "## Error Handler for Apify Data Collection\n\n**Captures:**\n- HTTP request failures (429, 500, 503)\n- Postgres constraint violations\n- Missing required fields\n\n**Actions:**\n1. Log to etl_logs table with severity='error'\n2. Send Slack notification to #boring-ops\n3. Include error context for debugging",
+        "height": 300,
+        "width": 500,
+        "color": 1
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        100
+      ],
+      "id": "sticky-note-error-handler",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error_node",
+              "name": "error_node",
+              "value": "={{ $json.node?.name || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "error_message",
+              "name": "error_message",
+              "value": "={{ $json.error?.message || 'Unknown error' }}",
+              "type": "string"
+            },
+            {
+              "id": "error_code",
+              "name": "error_code",
+              "value": "={{ $json.error?.httpCode || $json.error?.code || 'N/A' }}",
+              "type": "string"
+            },
+            {
+              "id": "run_id",
+              "name": "run_id",
+              "value": "={{ $json.execution?.customData?.run_id || 'unknown-run' }}",
+              "type": "string"
+            },
+            {
+              "id": "severity",
+              "name": "severity",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "stage",
+              "name": "stage",
+              "value": "={{ $json.node?.name || 'unknown_stage' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -256,
+        320
+      ],
+      "id": "extract-error-context",
+      "name": "Extract Error Context"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "etl_logs",
+          "mode": "list",
+          "cachedResultName": "etl_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "stage": "={{ $json.stage }}",
+            "severity": "={{ $json.severity }}",
+            "message": "={{ 'ERROR in ' + $json.error_node + ': ' + $json.error_message + ' (code: ' + $json.error_code + ')' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -32,
+        320
+      ],
+      "id": "log-to-database",
+      "name": "Log to Database",
+      "continueOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "TnlGCmH3cO4VwbS3",
+          "name": "Neon - Boring Business Market Research"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C12345ABC",
+          "mode": "id"
+        },
+        "text": "=🚨 **Apify Data Collection Error**\n\n**Node:** {{ $json.error_node }}\n**Message:** {{ $json.error_message }}\n**Code:** {{ $json.error_code }}\n**Run ID:** {{ $json.run_id }}\n**Time:** {{ $now.toISO() }}\n\n@alex Please investigate immediately.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [
+        192,
+        320
+      ],
+      "id": "slack-notification",
+      "name": "Slack Notification",
+      "continueOnFail": true,
+      "credentials": {
+        "slackApi": {
+          "id": "slack-webhook-credential",
+          "name": "Slack - Boring Ops"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Error Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Error Context": {
+      "main": [
+        [
+          {
+            "node": "Log to Database",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "day-2-error-handler",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "placeholder-for-deployment"
+  },
+  "id": "01-apify-error-handler",
+  "tags": ["error-handler", "apify", "day-2"]
+}
