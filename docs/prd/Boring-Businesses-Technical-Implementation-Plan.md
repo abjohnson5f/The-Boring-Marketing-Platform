@@ -7,7 +7,7 @@
 | Item | Action | Notes |
 | --- | --- | --- |
 | Repository | Ensure `BoringBusinessesMarketing` repo has `docs/`, `workflows/`, `sql/`, `runbooks/`, `diagrams/`. | Cursor agents will create/edit files. |
-| Credentials | Populate n8n credential vault: `Apify API`, `Neon Postgres`, `Graphiti MCP`, `Looker (if used)`, Slack webhook. | Reference existing secrets; no plaintext in workflows. |
+| Credentials | Populate n8n credential vault: `Apify API`, `Neon Postgres`, `Graphiti MCP`, `ThoughtSpot (if used)`, Slack webhook. | Reference existing secrets; no plaintext in workflows. |
 | Environments | Configure `.env` or n8n environment vars for `DEV` and `PROD` (DB connection strings, Slack channels). | Use Hostinger hosting tools. |
 | Runtime logging table | In Postgres, create `orchestrator_run_log` (run_id UUID PK, hypothesis_id UUID, stage TEXT, status TEXT, duration_ms INT, started_at TIMESTAMP DEFAULT now(), completed_at TIMESTAMP, error JSONB). | SQL migration in `sql/001_create_orchestrator_log.sql`. |
 
@@ -56,7 +56,8 @@ Add/Update nodes as follows:
 | 7 | **Function (Metrics Transform)** | `Function` | Compute derived metrics (review velocity, provider density, sentiment balance, channel score, high-ticket). Compare with thresholds fetched from `opportunity_thresholds`; output pass/fail flags. | Use Postgres query inside node or prefetch thresholds via separate Postgres node. |
 | 8 | **Postgres (Write Opportunity)** | `Postgres` | Upsert `opportunities` (hypothesis_id, summary, status). Insert `opportunity_metrics` (JSONB). | Include `analysis_version` increment. |
 | 9 | **IF - Thresholds** | `IF` | If all mandatory pass → route validated. If exactly one fail → needs_review. Else discarded. | Use booleans from Function. |
-| 10A | **Automation: Newsletter** | `Execute Workflow` | Trigger newsletter generator; capture result ID. | Only for validated. |
+| 10A | **Automation: Newsletter** | `Execute Workflow` | Trigger newsletter draft generator; receive `issue_id`, export asset links, and CTA summary for operator upload. | Only for validated. |
+| 10A-REMINDER | **Manual Publish Reminder** | `IF` + `Slack` | If `published_manually_at` is null after 24h, send reminder to operator (optional scheduled workflow). | Keeps SLA on track. |
 | 10B | **Automation: Lead Tasks** | `Function` + `Postgres` | Create tasks for top 10 targets with channel priority; insert into `lead_tasks`. | Validated path. |
 | 10C | **Slack Notify** | `Slack` | Send success summary to channel, include run metrics and status. | For validated & needs_review/discarded (different messages). |
 | 11 | **Postgres (Update Hypothesis Status)** | `Postgres` | Set `status` to `validated`/`needs_review`/`discarded`, update timestamps. | Finalize. |
@@ -81,15 +82,17 @@ Add/Update nodes as follows:
 4. **SQL Tools**
    - Ensure Postgres tool nodes exist for `List Businesses`, `Get File Contents`, `Query document_rows`. Add new tool `Top Distressed Providers` (SQL selecting businesses with low rating/high reviews, missing socials).
 
-### 3.4 Newsletter Agent Workflow
+### 3.4 Newsletter Draft Workflow
 
 | Node | Details |
 | --- | --- |
 | Trigger | `Execute Workflow` triggered by orchestrator validated path. |
-| Inputs | `hypothesis_id`, `summary`, `recommended_actions`, `metrics`. |
-| LLM | Use GPT-5 Codex or Claude Sonnet 4.5 to draft newsletter sections (subject lines, intro, highlights). |
-| Output | Insert into `newsletter_issues` with status `draft`; return `issue_id`. |
-| Optional | Generate Google Doc or Markdown file saved to repo. |
+| Inputs | `hypothesis_id`, `summary`, `recommended_actions`, `metrics`, optional CTA guidance. |
+| LLM | Use GPT-5 Codex or Claude Sonnet 4.5 to draft newsletter sections (subject options, intro, body, CTA, preview text). |
+| Persist Draft | Upsert `newsletter_issues` with `status='draft'`, store `subject_lines`, `content.markdown`, `content.sections`. |
+| Export Assets | Generate Markdown + HTML snippets (optionally Google Doc); write locations to `export_assets` JSONB column. |
+| Notify Operator | Post Slack message summarizing highlights and linking export files plus manual publish checklist. |
+| Output | Return `{issue_id, export_assets, subject_options, cta_summary}` for orchestrator logging. |
 
 ### 3.5 Slack & Alert Workflow
 
@@ -103,19 +106,18 @@ Standalone n8n workflow `ALERT-NOTIFY.json` triggered via `Webhook` nodes across
 
 ## 4. Dashboard & Reporting Setup (Day 4)
 
-1. **Looker**
-   - Connect Neon Postgres as data source.
-   - Build Explore `opportunities_explore` joining hypotheses, opportunities, metrics, lead_tasks.
-   - Create Looks for: Hypothesis pipeline, Validation rate, Lead funnel, Run freshness trend, Runtime SLA chart.
-
+1. **ThoughtSpot**
+   - Connect Neon Postgres (or replica) as a live connection.
+   - Model worksheets for `opportunities`, `newsletter_issues`, `lead_tasks`, and `opportunity_metrics`.
+   - Build initial Liveboards covering pipeline, validation rate, publish lag, and lead conversion.
 2. **Alerts**
-   - Configure Looker Dashboard schedule to Slack (on-demand trigger) when negative sentiment > threshold or conversion drops.
+   - Configure ThoughtSpot Monitor or Pinboard alerts to Slack when negative sentiment > threshold or conversion drops.
    - Backup: n8n scheduled workflow to query Postgres and notify Slack if metrics exceed thresholds.
 
 ## 5. SOP & Diagram Deliverables (Day 4)
 
 - **Runbooks**
-  - Draft `docs/runbooks/orchestrator-playbook.md` and `docs/runbooks/postgres-ingestion.md` (Cursor agents output with step-by-step instructions, screenshots optional).
+  - Draft `docs/runbooks/orchestrator-playbook.md`, `docs/runbooks/postgres-ingestion.md`, and `docs/runbooks/newsletter-manual-publish.md` (operator-facing manual upload checklist with screenshots).
 - **Diagrams** (`docs/diagrams/`)
   - Use Figma (template link) for state machine, orchestrator flow, ERD, monitoring/alerting. Export PNG/SVG for quick reference.
 
@@ -123,17 +125,18 @@ Standalone n8n workflow `ALERT-NOTIFY.json` triggered via `Webhook` nodes across
 
 1. **Dry Runs**
    - Execute 3 hypotheses end-to-end; ensure ingestion, scoring, automation complete without manual intervention post-approval.
-   - Verify Slack alerts on success/failure paths.
+   - Verify Slack alerts on success/failure paths and confirm the newsletter draft package includes working export links.
 
 2. **Data Verification**
    - Confirm rows in `opportunities`, `opportunity_metrics`, `lead_tasks`, `newsletter_issues`, `orchestrator_run_log`.
-   - Validate Looker dashboards reflect latest data.
+   - Ensure `newsletter_issues.export_assets` populated and accessible; capture manual publish confirmations.
 
 3. **SLA Recording**
    - Extract runtime durations from `orchestrator_run_log`; document in PRD outstanding decisions section.
 
 4. **Handoff**
    - Ensure README update summarizing setup, workflows, and runbooks.
+   - Walk operators through `newsletter-manual-publish` runbook and SLA expectations.
    - Archive implementation notes in `docs/prd/IMPLEMENTATION-COMPLETE.md` once signed off.
 
 ## 7. Post-MVP Backlog

@@ -17,7 +17,8 @@ The Boring Businesses Marketing Platform automates the **James Playbook** method
 - **AI-Powered Analysis**: Uses Claude, GPT-4, and Gemini for hypothesis validation and opportunity scoring
 - **PostgreSQL + Knowledge Graph**: Stores structured data with JSONB flexibility and semantic relationships
 - **Interactive RAG Interface**: Chat with your market data to discover patterns and pain points
-- **Automated Workflows**: n8n orchestration for end-to-end hypothesis processing
+- **Automated Workflows**: n8n orchestration for end-to-end hypothesis processing, including automated newsletter draft creation with operator-led Beehiv publishing
+- **Search-Driven Analytics**: ThoughtSpot Liveboards and Genie Copilot keep stakeholders informed without building traditional BI reports
 
 **Example Hypothesis**: *"Luxury tax advisory services in Charlotte, NC have high demand but few qualified providers"*
 

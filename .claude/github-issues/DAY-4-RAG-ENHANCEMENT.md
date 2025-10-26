@@ -128,20 +128,21 @@ SET metrics = $3::jsonb, analyzed_at = now();
    LIMIT 20;
    ```
 
-### 2. Build Newsletter Generation Workflow
+### 2. Build Newsletter Draft Workflow (Manual Publish)
 
-**Create**: `workflows/04-newsletter-generator.json`
+**Create**: `workflows/04-newsletter-draft-generator.json`
 
-**6-Node Workflow**:
+**7-Node Workflow**:
 
 | Node | Type | Purpose |
 |------|------|---------|
 | 1 | Execute Workflow Trigger | Called by orchestrator (validated path only) |
-| 2 | Set Input | Extract `hypothesis_id`, `summary`, `recommended_actions`, `metrics` |
-| 3 | AI Agent (LLM) | GPT-4 or Claude Sonnet 4.5 to draft newsletter |
-| 4 | Function Transform | Structure output (subject lines, intro, highlights) |
-| 5 | Postgres Insert | Save to `newsletter_issues` table with status `draft` |
-| 6 | Respond | Return `issue_id` |
+| 2 | Set Input | Extract `hypothesis_id`, `summary`, `recommended_actions`, `metrics`, `niche`, `city` |
+| 3 | AI Agent (LLM) | GPT-4 or Claude Sonnet 4.5 to draft newsletter sections |
+| 4 | Function Transform | Structure output (subject lines, intro, sections, CTA, preview text) |
+| 5 | Function Export | Generate Markdown + HTML strings; optionally build Google Doc payload |
+| 6 | Postgres Upsert | Save to `newsletter_issues` with `status='draft'` and `export_assets` JSONB |
+| 7 | Respond | Return `{issue_id, export_assets, subject_options, cta_summary}` for orchestrator |
 
 **LLM Prompt** (Node 3):
 ```
@@ -157,27 +158,55 @@ Task: Draft a newsletter issue targeting local service business owners.
 
 Format:
 1. 3 Subject Line Options (curiosity-driven, <50 chars)
-2. Intro Paragraph (hook with local insight)
-3. 3 Key Highlights (data-driven, actionable)
-4. Call-to-Action (subscribe for market intelligence)
+2. Preview Text (<90 chars)
+3. Intro Paragraph (hook with local insight)
+4. 3 Key Highlights (data-driven, actionable)
+5. Call-to-Action (subscribe for market intelligence)
+6. Suggested Send Timing window (optional, based on insights)
 
 Tone: Authoritative but approachable, data-backed, local-focused.
 ```
 
-**Output Structure**:
+**Export Structure** (Node 5):
 ```javascript
-{
-  subject_lines: [
-    "Charlotte luxury tax services: The $200/lead opportunity",
-    "Why 47% of high-net-worth clients switch tax advisors",
-    "Diesel mechanics making $30K/month (and how)"
-  ],
-  intro: "...",
-  highlights: ["...", "...", "..."],
-  cta: "Subscribe to Boring Business Insights for weekly market intelligence",
-  publish_target_date: "2025-11-01"
-}
+return {
+  issue_id: $json.issue_id,
+  subject_lines: data.subject_lines,
+  preview_text: data.preview_text,
+  content_markdown: renderMarkdown(data),
+  content_html: renderHtml(data),
+  sections: data.highlights,
+  cta_summary: data.cta,
+  export_assets: {
+    markdown_path: `s3://boring-newsletters/${$json.issue_id}.md`,
+    html_path: `s3://boring-newsletters/${$json.issue_id}.html`,
+    google_doc_link: $json.google_doc_link ?? null
+  }
+};
 ```
+
+**Postgres Upsert (Node 6)**:
+```sql
+INSERT INTO newsletter_issues (
+    opportunity_id,
+    status,
+    subject_lines,
+    content,
+    export_assets,
+    created_at,
+    updated_at
+) VALUES ($1, 'draft', $2::jsonb, $3::jsonb, $4::jsonb, now(), now())
+ON CONFLICT (issue_id) DO UPDATE
+SET subject_lines = $2::jsonb,
+    content = $3::jsonb,
+    export_assets = $4::jsonb,
+    updated_at = now();
+```
+
+### Operator Handoff Requirements
+- Slack notification must include subject options, highlights, and links in `export_assets`.
+- Reference `docs/runbooks/newsletter-manual-publish.md` in the message text.
+- Add orchestrator reminder task (24h follow-up if `published_manually_at` is NULL).
 
 ## Success Criteria (Binary)
 
@@ -186,37 +215,34 @@ Tone: Authoritative but approachable, data-backed, local-focused.
 - [ ] Timeout warning triggers if KG >5s
 - [ ] Structured output matches payload contract exactly
 - [ ] SQL tool nodes query correct tables
-- [ ] Newsletter workflow generates 3 subject lines
-- [ ] LLM output saved to `newsletter_issues` table
+- [ ] Newsletter workflow generates subject lines + export assets
+- [ ] LLM output stored in `newsletter_issues` (`content` JSONB + `export_assets` JSONB)
 - [ ] Orchestrator can call both workflows successfully
+- [ ] Manual Slack notification references the runbook
 - [ ] All JSON validates
 
 ## Validation Steps
 
-**RAG Workflow Test**:
-1. Trigger with test `hypothesis_id` from Day 3
-2. Verify KG tools execute (check MCP server logs)
-3. Confirm structured output written to `opportunities` table
-4. Query `opportunity_metrics` JSONB for all 4 metrics
-
 **Newsletter Workflow Test**:
-1. Trigger with validated hypothesis data
-2. Review LLM output for brand alignment
-3. Check `newsletter_issues` table for draft record
-4. Verify `issue_id` returned to orchestrator
+1. Trigger with validated hypothesis data.
+2. Review LLM output for brand alignment.
+3. Confirm `newsletter_issues` row contains `export_assets` with Markdown/HTML references.
+4. Ensure Slack payload (simulated) includes runbook link and reminder instructions.
+5. Verify orchestrator receives `{issue_id, export_assets, subject_options, cta_summary}`.
 
 **Expected Results**:
 - RAG analysis completes in <60s (including KG calls)
 - Newsletter draft generated in <10s
-- All data properly structured in database
+- Export assets stored and accessible for operator copy/paste
+- Manual publish SLA reminders configured
 
 ## Outputs
 
 **Files to Create**:
 - `workflows/03-rag-analysis-enhanced.json` (MODIFIED from reference)
-- `workflows/04-newsletter-generator.json` (NEW - 6 nodes)
+- `workflows/04-newsletter-draft-generator.json` (NEW)
 - `docs/runbooks/rag-workflow-operation.md` (NEW)
-- `docs/runbooks/newsletter-generation.md` (NEW)
+- `docs/runbooks/newsletter-manual-publish.md` (already linked, ensure up to date)
 - `docs/testing/day-4-rag-validation.md` (NEW)
 
 **PR Description Template**:
@@ -228,39 +254,35 @@ Tone: Authoritative but approachable, data-backed, local-focused.
 - ✅ Structured output (metrics, actions, targets)
 - ✅ SQL tool nodes (3 new queries)
 
-## Newsletter Workflow
-- ✅ 04-newsletter-generator.json (6 nodes, XX KB)
+## Newsletter Draft Workflow
+- ✅ 04-newsletter-draft-generator.json (7 nodes, XX KB)
 - ✅ LLM integration (GPT-4 / Claude Sonnet 4.5)
-- ✅ Structured output (subject lines, highlights, CTA)
-- ✅ Postgres integration (newsletter_issues table)
+- ✅ Export assets (Markdown + HTML, optional Google Doc)
+- ✅ Postgres integration (`newsletter_issues` + `export_assets` JSONB)
+- ✅ Slack-ready payload referencing manual publish runbook
 
 ## Validation Results
 ### RAG Analysis
 [Paste structured output example]
 
-### Newsletter Generation
+### Newsletter Draft
 **Subject Lines**:
 1. ...
 2. ...
 3. ...
 
-**Intro**: ...
-**Highlights**: ...
+**CTA Summary**: ...
+**Export Assets**: markdown/html paths verified
 ```
 
 ## Error Handling
 
-If RAG enhancement fails:
-1. Test KG MCP server connection separately
-2. Verify Graphiti server accessible from n8n
-3. Check `.claude/ERROR-HANDLING-PROTOCOL.md` Section 6.2
-4. Fallback: Skip KG tools, use SQL-only mode
-
-If newsletter generation fails:
+If newsletter draft workflow fails:
 1. Test LLM API key and quota
-2. Verify prompt structure (no template errors)
-3. Check `newsletter_issues` table schema
+2. Verify export asset renderer functions
+3. Check `newsletter_issues` schema (ensure `export_assets` column exists)
 4. Simplify prompt if LLM timing out
+5. Confirm S3 (or storage) credentials configured for asset upload
 
 ## Agent Configuration
 

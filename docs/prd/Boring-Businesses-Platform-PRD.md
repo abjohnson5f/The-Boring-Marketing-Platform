@@ -46,7 +46,7 @@ Goal: Within 5 days, the platform should support end-to-end identification, vali
 1. **Hypothesis Management** – capture, store, and track status of niche/location hypotheses.
 2. **Orchestrated Discovery Workflow** – for each hypothesis, automatically run Apify ingestion, KG/RAG analysis, opportunity scoring, and follow-up triggers.
 3. **Opportunity Intelligence Hub** – Postgres + KG storage of market metrics, channel gaps, sentiment insights, and lead recommendations.
-4. **Media & Lead Activation** – integrated newsletter planning, lead task creation, and performance tracking.
+4. **Media & Lead Activation** – integrated newsletter planning, lead task creation, and performance tracking. (Automation produces newsletter copy packages; operator manually uploads to Beehiv for send.)
 5. **Dashboards & Reporting** – metrics on pipeline stages, lead conversions, city-tier coverage, and KG usage.
 6. **Operational Guardrails** – dedupe, credential security, monitoring, and data freshness policies.
 
@@ -98,7 +98,7 @@ Goal: Within 5 days, the platform should support end-to-end identification, vali
    - `discarded` when more than one mandatory threshold fails (log reason trail).
    - Automatic requeue (`in_analysis`) if data scrape or analysis failed; orchestrator schedules retry.
 7. **Automation Hooks** – On `validated`:
-   - Generate newsletter brief via Newsletter agent; persist to `newsletter_issues` (status `draft`).
+   - Generate newsletter brief via Newsletter agent; persist to `newsletter_issues` (status `draft`) along with export assets for manual Beehiv upload.
    - Create lead tasks (one per top 10 target businesses) with prioritized outreach channel ranking.
    - Optionally push webhook to CRM/Slack (configurable per environment).
 8. **Completion** – Mark hypothesis `analyzed_at` timestamp, update run history, emit analytics event (`hypothesis.analyzed`).
@@ -222,9 +222,9 @@ Thresholds stored in Postgres table `opportunity_thresholds` with columns (`metr
   - Newsletter performance: opens, CTR, lead lift.
   - City coverage & saturation: number of active opportunities per city, provider density trends.
   - Run freshness: days since last Apify run per hypothesis.
-- **Visualization Tools:** Favor Looker initial rollout (for GA4 alignment), with Metabase fallback.
-- **Dashboard Specs:** Provide wireframes/KPIs document in `docs/dashboards/` describing chart types, filters (date range, city, niche), drill-down expectations. Include guidance for Looker templating and GA4 integration hooks.
-- **Alerts:** Slack notifications (channel TBD) when opportunity metrics shift > defined thresholds (e.g., negative sentiment spike, lead conversion drop). Implement via Looker/Metabase pulses or n8n alert workflow.
+- **Visualization Tools:** Favor ThoughtSpot (search-first Liveboards with Genie Copilot) for the initial rollout, with Metabase as a fallback.
+- **Dashboard Specs:** Provide wireframes/KPIs document in `docs/dashboards/` describing chart types, filters (date range, city, niche), drill-down expectations. Include guidance for ThoughtSpot worksheet modeling, search templates, and Spotter prompts.
+- **Alerts:** Slack notifications (channel TBD) when opportunity metrics shift > defined thresholds (e.g., negative sentiment spike, lead conversion drop). Implement via ThoughtSpot monitors or n8n alert workflow.
 
 ### 6.7 Security & Compliance
 - Ensure Apify use respects terms of service; implement throttling.

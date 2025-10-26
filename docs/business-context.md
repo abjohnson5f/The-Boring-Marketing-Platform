@@ -55,7 +55,7 @@
 - **Automated Loop:** Orchestrator triggers ingestion → KG/RAG → scoring → automation. Failures alert Slack immediately; retries limited to 3 before blocking.
 - **Scoring Thresholds:** Review velocity ≥10, provider density ≤12, incumbency ratio ≤0.35, sentiment balance ≤-10%, channel presence ≤0.5, high-ticket confidence ≥0.7, lead viability ≥3 (bonus). Thresholds reviewed quarterly.
 - **Outputs:** `opportunities` + `opportunity_metrics` tables capture structured insights; top targets prioritized for lead outreach; newsletter drafts generated automatically.
-- **Stack:** n8n, Apify, Neon Postgres (PGVector), Neo4j/Graphiti, Looker dashboards, Slack alerts. Build accelerated by Cursor agents (GPT-5 Codex, Claude Sonnet 4.5).
+- **Stack:** n8n, Apify, Neon Postgres (PGVector), Neo4j/Graphiti, ThoughtSpot Liveboards, Slack alerts. Build accelerated by Cursor agents (GPT-5 Codex, Claude Sonnet 4.5).
 
 #### CMO Talking Points
 - Multi-channel insight engine: cross-linking vector, SQL, and KG data enables nuanced narratives (entity relationships, numeric proofs, churn signals).
@@ -117,8 +117,9 @@
 - **Timeline:** 5-day implementation sprint (Day1 foundations & hardening, Day2 KG/RAG, Day3 orchestrator, Day4 dashboards/SOPs, Day5 validation & pilot).
 - **Human-in-the-loop:** Manual hypothesis vetting + initial Apify run before automation kicks in.
 - **Environments:** Dev and Production; runtime metrics logged to dedicated tables.
-- **Dashboards:** Looker preferred (GA4 alignment), on-demand access only.
+- **Dashboards:** ThoughtSpot (search-driven Liveboards with Genie Copilot), on-demand access only.
 - **Notifications:** Slack alerts for failures/metric shifts; no PagerDuty.
+- **Newsletter Operations:** Automation delivers final copy assets; operator manually uploads to Beehiv and logs send time per runbook.
 - **SOPs:**
   - `docs/runbooks/orchestrator-playbook.md`
   - `docs/runbooks/postgres-ingestion.md`

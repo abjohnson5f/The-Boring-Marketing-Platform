@@ -34,7 +34,7 @@
 | 7 | Function Transform | Metrics calculation | Compute derived metrics, compare vs thresholds |
 | 8 | Postgres Write | Save opportunity | UPSERT `opportunities`, INSERT `opportunity_metrics` JSONB |
 | 9 | IF Thresholds | Routing logic | validated / needs_review / discarded based on threshold pass/fail |
-| 10A | Execute Newsletter | Validated path only | Trigger newsletter generator workflow |
+| 10A | Execute Newsletter | Validated path only | Trigger newsletter draft workflow; receive export assets for manual Beehiv upload (see runbook). |
 | 10B | Function + Postgres | Lead tasks | Create top 10 target tasks, insert into `lead_tasks` |
 | 10C | Slack Notify | All paths | Different message per status |
 | 11 | Postgres Update | Finalize hypothesis | Set `status`, update timestamps |
