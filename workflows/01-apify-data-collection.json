@@ -45,6 +45,12 @@
               "type": "string"
             },
             {
+              "id": "started_at",
+              "name": "started_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
               "id": "city",
               "name": "city",
               "value": "={{ $json.city || 'Unknown' }}",
@@ -115,7 +121,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Flatten reviews from all businesses\n// Input: Array of business objects with reviews arrays\n// Output: One item per review with business_id preserved\n\nconst results = [];\n\nfor (const business of items) {\n  const b = business.json;\n  \n  // Ensure business_id exists\n  const businessId = b.business_id || b.id;\n  \n  // Ensure reviews exist and is an array\n  if (Array.isArray(b.reviews) && b.reviews.length > 0) {\n    for (const review of b.reviews) {\n      results.push({\n        json: {\n          business_id: businessId,\n          reviewer_id: review.reviewerId || null,\n          reviewer_name: review.name || null,\n          reviewer_url: review.reviewerUrl || null,\n          reviewer_reviews_count: review.reviewerNumberOfReviews || null,\n          is_local_guide: review.isLocalGuide || false,\n          reviewer_photo_url: review.reviewerPhotoUrl || null,\n          stars: review.stars || null,\n          review_text: review.text || null,\n          text_translated: review.textTranslated || null,\n          publish_at: review.publishAt || review.publishedAtDate || null,\n          likes_count: review.likesCount || 0,\n          response_from_owner_date: review.responseFromOwnerDate || null,\n          response_from_owner_text: review.responseFromOwnerText || null,\n          people_also_search: Array.isArray(review.peopleAlsoSearch) \n            ? JSON.stringify(review.peopleAlsoSearch) \n            : null\n        }\n      });\n    }\n  }\n}\n\nreturn results.length > 0 ? results : [{ json: { no_reviews: true } }];"
+        "jsCode": "// Flatten reviews from all businesses\n// Input: Array of business objects with reviews arrays\n// Output: One item per review with business_id preserved\n\nconst results = [];\n\nfor (const business of items) {\n  const b = business.json;\n  \n  // Ensure business_id exists\n  const businessId = b.business_id || b.id;\n  \n  // Ensure reviews exist and is an array\n  if (Array.isArray(b.reviews) && b.reviews.length > 0) {\n    for (const review of b.reviews) {\n      results.push({\n        json: {\n          business_id: businessId,\n          reviewer_id: review.reviewerId || null,\n          reviewer_name: review.name || null,\n          reviewer_url: review.reviewerUrl || null,\n          reviewer_reviews_count: review.reviewerNumberOfReviews || null,\n          is_local_guide: review.isLocalGuide || false,\n          reviewer_photo_url: review.reviewerPhotoUrl || null,\n          stars: review.stars || null,\n          review_text: review.text || null,\n          text_translated: review.textTranslated || null,\n          publish_at: review.publishAt || review.publishedAtDate || null,\n          likes_count: review.likesCount || 0,\n          response_from_owner_date: review.responseFromOwnerDate || null,\n          response_from_owner_text: review.responseFromOwnerText || null,\n          people_also_search: Array.isArray(review.peopleAlsoSearch) \n            ? JSON.stringify(review.peopleAlsoSearch) \n            : null\n        }\n      });\n    }\n  }\n}\n\nreturn results.length > 0 ? results : [];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -755,11 +761,11 @@
             },
             {
               "name": "duration_ms",
-              "value": "={{ Date.now() - new Date($('Set Hypothesis Context').item.json.run_id.split('-')[0]).getTime() }}"
+              "value": "={{ Date.now() - new Date($('Set Hypothesis Context').item.json.started_at).getTime() }}"
             },
             {
               "name": "started_at",
-              "value": "={{ $('Set Hypothesis Context').item.json.run_id.split('-')[0] }}"
+              "value": "={{ $('Set Hypothesis Context').item.json.started_at }}"
             },
             {
               "name": "completed_at",
