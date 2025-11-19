@@ -5,20 +5,10 @@ Migrate SQLite database to Neon PostgreSQL
 import sqlite3
 import sys
 import os
-import getpass
-from urllib.parse import urlparse, parse_qs
+import subprocess
 
-# Neon connection details
-NEON_HOST = "ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech"
-NEON_DB = "neondb"
-NEON_USER = "neondb_owner"
-
-def get_neon_password():
-    """Get Neon password from environment or prompt"""
-    password = os.environ.get('NEON_PASSWORD')
-    if not password:
-        password = getpass.getpass(f"Enter password for {NEON_USER}@{NEON_HOST}: ")
-    return password
+# Neon connection string (full)
+NEON_CONNECTION = "postgresql://neondb_owner:npg_LyPc2gdrEt9m@ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 def export_sqlite_to_postgres_sql(sqlite_path, output_file):
     """Export SQLite database to PostgreSQL-compatible SQL"""
@@ -134,18 +124,16 @@ def export_sqlite_to_postgres_sql(sqlite_path, output_file):
     print(f"✅ SQL export written to: {output_file}")
     return output_file
 
-def import_to_neon(sql_file, connection_string):
+def import_to_neon(sql_file):
     """Import SQL file to Neon PostgreSQL"""
-    import subprocess
-    
-    print(f"📥 Importing to Neon PostgreSQL...")
-    print(f"   Host: {NEON_HOST}")
-    print(f"   Database: {NEON_DB}")
+    print(f"\n📥 Importing to Neon PostgreSQL...")
+    print(f"   Host: ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech")
+    print(f"   Database: neondb")
     
     # Use psql to import
     try:
         result = subprocess.run(
-            ['psql', connection_string, '-f', sql_file],
+            ['psql', NEON_CONNECTION, '-f', sql_file],
             capture_output=True,
             text=True,
             check=False
@@ -153,16 +141,43 @@ def import_to_neon(sql_file, connection_string):
         
         if result.returncode == 0:
             print("✅ Import successful!")
+            if result.stdout:
+                print(result.stdout)
             return True
         else:
             print("❌ Import failed:")
-            print(result.stderr)
+            if result.stderr:
+                print(result.stderr)
+            if result.stdout:
+                print(result.stdout)
             return False
     except FileNotFoundError:
         print("❌ psql not found. Please install PostgreSQL client:")
         print("   macOS: brew install postgresql")
-        print("   Or manually import the SQL file using:")
-        print(f"   psql '{connection_string}' < {sql_file}")
+        print("   Linux: apt-get install postgresql-client or yum install postgresql")
+        print("\n   Or manually import the SQL file:")
+        print(f"   psql '{NEON_CONNECTION}' < {sql_file}")
+        return False
+
+def verify_tables():
+    """Verify tables were created in Neon"""
+    print("\n📊 Verifying tables in Neon...")
+    try:
+        result = subprocess.run(
+            ['psql', NEON_CONNECTION, '-c', "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        
+        if result.returncode == 0:
+            print(result.stdout)
+            return True
+        else:
+            print("⚠️  Could not verify tables (this is okay if psql is not installed)")
+            return False
+    except FileNotFoundError:
+        print("⚠️  psql not available for verification")
         return False
 
 def main():
@@ -180,27 +195,30 @@ def main():
     
     # Export SQLite to SQL
     output_sql = "strategic_alignment_neon_import.sql"
+    print("="*60)
     export_sqlite_to_postgres_sql(sqlite_path, output_sql)
-    
-    # Get password and build connection string
-    password = get_neon_password()
-    connection_string = f"postgresql://{NEON_USER}:{password}@{NEON_HOST}/{NEON_DB}?sslmode=require"
     
     # Import to Neon
     print("\n" + "="*60)
-    import_to_neon(output_sql, connection_string)
+    success = import_to_neon(output_sql)
+    
+    if success:
+        verify_tables()
     
     print("\n" + "="*60)
-    print("🎉 Migration process complete!")
-    print("\nNext steps:")
-    print("1. Verify tables in Neon dashboard")
-    print("2. Configure Retool with these settings:")
-    print(f"   Host: {NEON_HOST}")
+    if success:
+        print("🎉 Migration complete!")
+    else:
+        print("⚠️  Migration had issues. Check output above.")
+    
+    print("\n📋 Retool Configuration:")
+    print("   Resource Type: PostgreSQL")
+    print("   Host: ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech")
     print("   Port: 5432")
-    print(f"   Database: {NEON_DB}")
-    print(f"   Username: {NEON_USER}")
-    print("   Password: [your password]")
-    print("   SSL: ✓ Enabled")
+    print("   Database: neondb")
+    print("   Username: neondb_owner")
+    print("   Password: npg_LyPc2gdrEt9m")
+    print("   SSL: ✓ Enabled (REQUIRED)")
 
 if __name__ == "__main__":
     main()

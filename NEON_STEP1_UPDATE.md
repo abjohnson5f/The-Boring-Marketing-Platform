@@ -8,6 +8,7 @@
 - **Port:** `5432`
 - **Database:** `neondb`
 - **Username:** `neondb_owner`
+- **Password:** `npg_LyPc2gdrEt9m`
 - **SSL Required:** Yes
 
 ## Step 1A: Migrate SQLite Database to Neon
@@ -27,15 +28,12 @@ python3 /workspace/scripts/migrate-sqlite-to-neon.py \
 
 The script will:
 1. Export your SQLite database to PostgreSQL-compatible SQL
-2. Prompt you for your Neon password
-3. Import the data to Neon
+2. Import the data to Neon automatically
+3. Verify the tables were created
 
 ### Option 2: Using Bash Script
 
 ```bash
-# Set your Neon password as environment variable (optional)
-export NEON_PASSWORD="your-password-here"
-
 # Run the migration
 /workspace/scripts/migrate-to-neon.sh \
   "/Users/alexjohnson/IDE Work/govspend-faulconer-market-intelligence/data/strategic_alignment.db"
@@ -58,8 +56,8 @@ sed -i.bak \
   -e '/^COMMIT/d' \
   strategic_alignment.sql
 
-# 3. Import to Neon (you'll be prompted for password)
-psql "postgresql://neondb_owner:YOUR_PASSWORD@ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" < strategic_alignment.sql
+# 3. Import to Neon
+psql "postgresql://neondb_owner:npg_LyPc2gdrEt9m@ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require" < strategic_alignment.sql
 ```
 
 ## Step 1B: Verify Migration
@@ -67,7 +65,7 @@ psql "postgresql://neondb_owner:YOUR_PASSWORD@ep-solitary-waterfall-ahcfss5g.c-3
 After migration, verify your tables exist:
 
 ```bash
-psql "postgresql://neondb_owner:YOUR_PASSWORD@ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" -c "\dt"
+psql "postgresql://neondb_owner:npg_LyPc2gdrEt9m@ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require" -c "\dt"
 ```
 
 You should see tables like:
@@ -90,7 +88,7 @@ You should see tables like:
    - **Port:** `5432`
    - **Database name:** `neondb`
    - **Database username:** `neondb_owner`
-   - **Database password:** `[your Neon password]`
+   - **Database password:** `npg_LyPc2gdrEt9m`
    - **Use SSL:** ✓ **CHECK THIS BOX** (Neon requires SSL)
 
 3. **Test Connection:**
@@ -118,9 +116,9 @@ Create a test query to verify everything works:
 
 ### "Connection failed" error
 - ✅ Verify SSL checkbox is checked in Retool
-- ✅ Double-check your password
+- ✅ Double-check your password: `npg_LyPc2gdrEt9m`
 - ✅ Ensure your Neon database is active (not paused) in Neon dashboard
-- ✅ Check that the host address is correct
+- ✅ Check that the host address is correct: `ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech`
 
 ### "Table does not exist" error
 - ✅ Run the migration script again

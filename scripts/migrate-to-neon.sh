@@ -5,13 +5,11 @@
 set -e
 
 SQLITE_DB="$1"
-NEON_CONNECTION="postgresql://neondb_owner:${NEON_PASSWORD}@ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
+NEON_CONNECTION="postgresql://neondb_owner:npg_LyPc2gdrEt9m@ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 if [ -z "$SQLITE_DB" ]; then
     echo "Usage: $0 <sqlite_db_path>"
     echo "Example: $0 /path/to/strategic_alignment.db"
-    echo ""
-    echo "Note: Set NEON_PASSWORD environment variable if password is needed"
     exit 1
 fi
 
@@ -34,6 +32,7 @@ fi
 if ! command -v psql &> /dev/null; then
     echo "Error: psql not found. Please install PostgreSQL client first."
     echo "macOS: brew install postgresql"
+    echo "Linux: apt-get install postgresql-client"
     exit 1
 fi
 
@@ -60,38 +59,36 @@ sed -i.bak \
 rm -f "${TEMP_SQL}.bak"
 
 echo "📥 Importing to Neon PostgreSQL..."
-echo "⚠️  You may be prompted for the database password"
 
 # Import to Neon
-if [ -n "$NEON_PASSWORD" ]; then
-    export PGPASSWORD="$NEON_PASSWORD"
-fi
-
-psql "$NEON_CONNECTION" < "$TEMP_SQL" || {
+if psql "$NEON_CONNECTION" < "$TEMP_SQL"; then
+    echo ""
+    echo "✅ Migration complete!"
+    echo ""
+    echo "📊 Verifying tables..."
+    psql "$NEON_CONNECTION" -c "\dt" || true
+    
+    echo ""
+    echo "🎉 Your database is now in Neon!"
+else
     echo ""
     echo "❌ Import failed. Common issues:"
-    echo "   1. Password incorrect - set NEON_PASSWORD environment variable"
-    echo "   2. Tables already exist - drop them first or use --clean option"
-    echo "   3. SSL connection issue - check your network"
+    echo "   1. Tables already exist - drop them first or use DROP TABLE IF EXISTS"
+    echo "   2. SSL connection issue - check your network"
+    echo "   3. Syntax errors - check the SQL file: $TEMP_SQL"
     rm -f "$TEMP_SQL"
     exit 1
-}
+fi
 
 # Cleanup
 rm -f "$TEMP_SQL"
 
 echo ""
-echo "✅ Migration complete!"
-echo ""
-echo "📊 Verifying tables..."
-psql "$NEON_CONNECTION" -c "\dt" || true
-
-echo ""
-echo "🎉 Your database is now in Neon!"
-echo "Next: Configure Retool with these settings:"
-echo "  Host: ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech"
-echo "  Port: 5432"
-echo "  Database: neondb"
-echo "  Username: neondb_owner"
-echo "  Password: [your password]"
-echo "  SSL: ✓ Enabled"
+echo "📋 Retool Configuration:"
+echo "   Resource Type: PostgreSQL"
+echo "   Host: ep-solitary-waterfall-ahcfss5g.c-3.us-east-1.aws.neon.tech"
+echo "   Port: 5432"
+echo "   Database: neondb"
+echo "   Username: neondb_owner"
+echo "   Password: npg_LyPc2gdrEt9m"
+echo "   SSL: ✓ Enabled (REQUIRED)"
